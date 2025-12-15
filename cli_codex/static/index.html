@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Профориентационная анкета</title>
+    <style>
+      :root {
+        font-family: "Segoe UI", Tahoma, sans-serif;
+        background-color: #f5f6fa;
+        color: #2f3542;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #74b9ff, #a29bfe);
+        padding: 20px;
+      }
+
+      .card {
+        width: min(540px, 100%);
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(47, 53, 66, 0.2);
+        padding: 32px;
+      }
+
+      h1 {
+        margin-top: 0;
+        font-size: 28px;
+      }
+
+      p.description {
+        margin-bottom: 24px;
+        color: #57606f;
+      }
+
+      .question-block {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .question-block strong {
+        font-size: 16px;
+      }
+
+      .question-block input {
+        padding: 10px 12px;
+        border: 1px solid #dfe4ea;
+        border-radius: 8px;
+        font-size: 15px;
+      }
+
+      .submit-btn {
+        width: 100%;
+        background: #1e90ff;
+        border: none;
+        color: #fff;
+        font-size: 16px;
+        padding: 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .submit-btn:hover {
+        background: #187bcd;
+      }
+
+      .error {
+        color: #e84118;
+        margin-bottom: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Найди своё направление</h1>
+      <p class="description">
+        Ответь на несколько вопросов о своих интересах, и мы поможем увидеть
+        подходящий вектор развития.
+      </p>
+      <div id="error" class="error" hidden></div>
+      <form id="survey-form">
+        <div id="form-fields" class="questions"></div>
+        <button type="submit" class="submit-btn">Отправить ответы</button>
+      </form>
+    </div>
+
+    <script>
+      const form = document.getElementById("survey-form");
+      const fieldsContainer = document.getElementById("form-fields");
+      const errorBox = document.getElementById("error");
+
+      async function loadQuestions() {
+        try {
+          const response = await fetch("/questions");
+          if (!response.ok) {
+            throw new Error("Не удалось загрузить вопросы");
+          }
+          const questions = await response.json();
+          renderQuestions(questions);
+        } catch (error) {
+          errorBox.textContent = error.message;
+          errorBox.hidden = false;
+        }
+      }
+
+      function renderQuestions(questions) {
+        fieldsContainer.innerHTML = "";
+        questions.forEach((question) => {
+          const block = document.createElement("div");
+          block.className = "question-block";
+
+          const label = document.createElement("strong");
+          label.textContent = question.text;
+          block.appendChild(label);
+
+          const input = document.createElement("input");
+          input.type = "text";
+          input.name = `question-${question.id}`;
+          input.dataset.questionId = question.id;
+          block.appendChild(input);
+
+          fieldsContainer.appendChild(block);
+        });
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const answers = Array.from(
+          fieldsContainer.querySelectorAll("input[data-question-id]")
+        ).map((input) => ({
+          questionId: Number(input.dataset.questionId),
+          answer: input.value,
+        }));
+
+        try {
+          const response = await fetch("/answers", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ answers }),
+          });
+          if (!response.ok) {
+            throw new Error("Не удалось отправить ответы");
+          }
+          alert("Спасибо!");
+          form.reset();
+        } catch (error) {
+          errorBox.textContent = error.message;
+          errorBox.hidden = false;
+        }
+      });
+
+      loadQuestions();
+    </script>
+  </body>
+</html>

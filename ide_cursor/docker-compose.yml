@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  survey:
+    build: .
+    container_name: survey-app
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
